@@ -1,0 +1,40 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "cargo",
+      "command": "build",
+      "args": ["--manifest-path", "examples/yolov8/Cargo.toml", "--example", "yolov8", "--target-dir", "target"],
+      "group": "build",
+      "label": "rust: cargo build --example object_detection_example (win)",
+      "problemMatcher": ["$rustc"],
+      "options": {
+        "env": {
+          "RUSTFLAGS": "-C debuginfo=2 -C opt-level=0 -C force-frame-pointers=yes -C lto=no -C link-arg=/DEBUG:FULL"
+        }
+      }
+    },
+    {
+      "type": "cargo",
+      "command": "test",
+      "args": [],
+      "group": "test",
+      "label": "rust: cargo test",
+      "problemMatcher": ["$rustc"]
+    }
+  ],
+  "inputs": [
+    {
+      "type": "pickString",
+      "id": "exampleName",
+      "description": "Select example to build",
+      "options": [
+        "real_model_example",
+        "single_frame",
+        "multi_frame", 
+        "video_stream",
+        "simple_demo"
+      ]
+    }
+  ]
+}

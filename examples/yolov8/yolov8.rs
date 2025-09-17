@@ -17,7 +17,6 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 // backends.
 #[path = "../common/mod.rs"]
 mod common;
-
 #[derive(Debug, Clone, Copy)]
 struct BoundingBox {
 	x1: f32,
@@ -34,7 +33,7 @@ fn union(box1: &BoundingBox, box2: &BoundingBox) -> f32 {
 	((box1.x2 - box1.x1) * (box1.y2 - box1.y1)) + ((box2.x2 - box2.x1) * (box2.y2 - box2.y1)) - intersection(box1, box2)
 }
 
-const YOLOV8M_URL: &str = "https://cdn.pyke.io/0/pyke:ort-rs/example-models@0.0.0/yolov8m.onnx";
+const YOLOV8M_URL: &str = "http://cdn.pyke.io/0/pyke:ort-rs/example-models@0.0.0/yolov8m.onnx";
 
 #[rustfmt::skip]
 const YOLOV8_CLASS_LABELS: [&str; 80] = [
@@ -59,7 +58,7 @@ fn main() -> ort::Result<()> {
 	// Register EPs based on feature flags - this isn't crucial for usage and can be removed.
 	common::init()?;
 
-	let original_img = image::open(Path::new(env!("CARGO_MANIFEST_DIR")).join("data").join("baseball.jpg")).unwrap();
+	let original_img = image::open(Path::new(env!("CARGO_MANIFEST_DIR")).join("data").join("lady.jpg")).unwrap();
 	let (img_width, img_height) = (original_img.width(), original_img.height());
 	let img = original_img.resize_exact(640, 640, FilterType::CatmullRom);
 	let mut input = Array::zeros((1, 3, 640, 640));
@@ -90,9 +89,13 @@ fn main() -> ort::Result<()> {
 			.map(|(index, value)| (index, *value))
 			.reduce(|accum, row| if row.1 > accum.1 { row } else { accum })
 			.unwrap();
+
 		if prob < 0.5 {
 			continue;
 		}
+		// display detection and confidence.
+		dbg!(YOLOV8_CLASS_LABELS[class_id], prob);
+
 		let label = YOLOV8_CLASS_LABELS[class_id];
 		let xc = row[0] / 640. * (img_width as f32);
 		let yc = row[1] / 640. * (img_height as f32);
@@ -124,14 +127,18 @@ fn main() -> ort::Result<()> {
 
 	let mut dt = DrawTarget::new(img_width as _, img_height as _);
 
+	dbg!(&result);
 	for (bbox, label, _confidence) in result {
+		println!("Detected '{}' at x1: {:.1}, y1: {:.1}, x2: {:.1}, y2: {:.1} (confidence: {:.2})", label, bbox.x1, bbox.y1, bbox.x2, bbox.y2, _confidence);
 		let mut pb = PathBuilder::new();
 		pb.rect(bbox.x1, bbox.y1, bbox.x2 - bbox.x1, bbox.y2 - bbox.y1);
 		let path = pb.finish();
 		let color = match label {
-			"baseball bat" => SolidSource { r: 0x00, g: 0x10, b: 0x80, a: 0x80 },
-			"baseball glove" => SolidSource { r: 0x20, g: 0x80, b: 0x40, a: 0x80 },
-			_ => SolidSource { r: 0x80, g: 0x10, b: 0x40, a: 0x80 }
+			"baseball bat" => SolidSource { r: 0x00, g: 0x10, b: 0x80, a: 0x80 },   // blue
+			"baseball glove" => SolidSource { r: 0x20, g: 0x80, b: 0x40, a: 0x80 }, // green
+			"person" => SolidSource { r: 0x20, g: 0x80, b: 0x40, a: 0x80 },         // green
+			"cat" => SolidSource { r: 0xFF, g: 0xFF, b: 0x00, a: 0x80 },            // yellow
+			_ => SolidSource { r: 0x80, g: 0x10, b: 0x40, a: 0x80 }                 // red
 		};
 		dt.stroke(
 			&path,
@@ -150,10 +157,13 @@ fn main() -> ort::Result<()> {
 	let window = show_image::context()
 		.run_function_wait(move |context| -> Result<_, String> {
 			let mut window = context
-				.create_window("ort + YOLOv8", WindowOptions {
-					size: Some([img_width, img_height]),
-					..WindowOptions::default()
-				})
+				.create_window(
+					"ort + YOLOv8",
+					WindowOptions {
+						size: Some([img_width, img_height]),
+						..WindowOptions::default()
+					}
+				)
 				.map_err(|e| e.to_string())?;
 			window.set_image("baseball", &original_img.as_image_view().map_err(|e| e.to_string())?);
 			window.set_overlay("yolo", &overlay.as_image_view().map_err(|e| e.to_string())?, true);

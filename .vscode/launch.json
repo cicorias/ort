@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug (MSVC) Windows object_detection_example",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "windows": {
+        "program": "${workspaceFolder}/examples/yolov8/target/debug/examples/yolov8.exe"
+      },
+      "program": "${workspaceFolder}/examples/yolov8/target/debug/examples/yolov8.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "environment": [
+        {
+          "name": "RUST_BACKTRACE",
+          "value": "1"
+        }
+      ],
+      "preLaunchTask": "rust: cargo build --example object_detection_example (win)"
+    }
+  ]
+}

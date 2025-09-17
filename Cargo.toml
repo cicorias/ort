@@ -1,5 +1,5 @@
 [workspace]
-members = [ 'ort-sys' ]
+members = [ 'ort-sys', 'examples/yolov8' ]
 default-members = [ '.' ]
 exclude = [
 	'backends/candle',
@@ -14,7 +14,6 @@ exclude = [
 	'examples/sentence-transformers',
 	'examples/training',
 	'examples/wasm-emscripten',
-	'examples/yolov8',
 	'tests/leak-check'
 ]
 
